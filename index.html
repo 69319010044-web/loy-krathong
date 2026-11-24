@@ -1,16 +1,142 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪷</text></svg>" />
-    <title>ประเพณีลอยกระทง 3 มิติ (Loy Krathong Festival 3D)</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Charm:wght@400;700&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-slate-950 text-white overflow-hidden select-none">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>งานวัดลอยกระทง 3D (Loy Krathong Festival 3D)</title>
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪷</text></svg>">
+</head>
+<body>
+  <!-- 3D WebGL Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- UI HUD Overlay -->
+  <div id="ui-overlay">
+    <!-- Top HUD Bar -->
+    <header class="hud-header">
+      <div class="festival-badge">
+        <span class="moon-icon">🌕</span>
+        <div>
+          <div class="festival-title">งานวัดลอยกระทง ๒๕๖๙ (3D)</div>
+          <div class="festival-sub">วัดพระงามบวรวิหารริมน้ำ & ตลาดงานวัด</div>
+        </div>
+      </div>
+
+      <!-- Scenic View Presets Switcher -->
+      <div class="preset-switcher">
+        <button class="btn-preset active" data-preset="pier" title="มุมมองท่าน้ำลอยกระทงและพระจันทร์เต็มดวง [คีย์ 1]">
+          🌊 ท่าน้ำริมน้ำ
+        </button>
+        <button class="btn-preset" data-preset="market" title="มุมมองตลาดนัดของขายงานวัด [คีย์ 2]">
+          🏮 ตลาดงานวัด
+        </button>
+        <button class="btn-preset" data-preset="temple" title="มุมมองพระเจดีย์ทองและพระอุโบสถ [คีย์ 3]">
+          🏛️ วัดและเจดีย์
+        </button>
+        <button class="btn-preset" data-preset="panoramic" title="มุมมองพาโนรามามุมสูงทั่วบริเวณ [คีย์ 4]">
+          🌕 มุมกว้าง
+        </button>
+      </div>
+
+      <div class="hud-actions">
+        <button id="btn-audio" class="btn-icon" title="เปิด/ปิดเสียงดนตรีและบรรยากาศ">
+          <span id="audio-icon">🔊</span> ดนตรีงานวัด
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Central Action Bar (สองปุ่มหลัก: จุดพลุ และ ลอยกระทง) -->
+    <div class="main-action-panel">
+      <button id="btn-fireworks" class="btn-action btn-fireworks" title="จุดพลุเฉลิมฉลองงานวัด">
+        <span class="btn-action-icon">🎆</span>
+        <div class="btn-action-text">
+          <div class="btn-action-title">จุดพลุ</div>
+          <div class="btn-action-sub">เฉลิมฉลองงานวัด</div>
+        </div>
+      </button>
+
+      <button id="btn-krathong" class="btn-action btn-krathong" title="ปล่อยกระทงสู่สายน้ำ">
+        <span class="btn-action-icon">🪷</span>
+        <div class="btn-action-text">
+          <div class="btn-action-title">ลอยกระทง</div>
+          <div class="btn-action-sub">ขอขมาพระแม่คงคา</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Bottom HUD Bar -->
+    <footer class="hud-footer">
+      <div class="controls-guide">
+        <div><span>[คลิกเมาส์ลาก]</span> หมุนมุมกล้อง 360°</div>
+        <div><span>[ล้อเมาส์]</span> ซูมเข้า-ออก</div>
+        <div><span>[1, 2, 3, 4]</span> สลับมุมมองสถานที่</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Modal: Float Krathong with Wish -->
+  <div id="krathong-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><span>🪷</span> ขอพรและลอยกระทงสู่สายน้ำ</h3>
+        <button class="btn-close" id="btn-close-krathong">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="option-group">
+          <label>พิมพ์คำอธิษฐานขอพรพระแม่คงคา (Your Wish):</label>
+          <textarea id="wish-input" class="wish-textarea" placeholder="พิมพ์คำอธิษฐานของคุณที่นี่..."></textarea>
+          <div class="quick-wishes">
+            <button class="btn-quick-wish" data-wish="ขอขมาพระแม่คงคา และขอให้ชีวิตร่มเย็นเป็นสุข สุขภาพแข็งแรง 🪷">สุขภาพ/ครอบครัว</button>
+            <button class="btn-quick-wish" data-wish="ขอให้ปีนี้การงานรุ่งเรือง ค้าขายร่ำรวย เงินทองไหลมาเทมา 💸">การงาน/เงินทอง</button>
+            <button class="btn-quick-wish" data-wish="ขอให้ได้เจอความรักที่ดี มีความสุข สมหวังในทุกสิ่ง 💕">ความรัก</button>
+            <button class="btn-quick-wish" data-wish="ขอให้สิ่งที่ตั้งใจไว้สำเร็จทุกประการ โชคดีตลอดไป ✨">ความสำเร็จ</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 18px;">
+          <button id="btn-confirm-launch" class="btn-primary" style="flex: 1;">
+            🌊 ปล่อยกระทงลงสู่แม่น้ำทันที
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wish Released Floating Banner -->
+  <div id="cinematic-banner" class="hidden">
+    <h2>✨ ลอยกระทงขอขมาพระแม่คงคา ✨</h2>
+    <p id="cinematic-wish-text">"ขอให้ชีวิตมีความสุข ร่มเย็นเป็นสุข"</p>
+    <button id="btn-exit-cinematic" class="btn-icon" style="margin: 0 auto; display: inline-flex;">
+      <span>🚶</span> ชมบรรยากาศต่อ
+    </button>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="hidden">
+    <span id="toast-icon">✨</span>
+    <span id="toast-msg">ข้อความแจ้งเตือน</span>
+  </div>
+
+  <!-- Welcome / Intro Screen -->
+  <div id="welcome-overlay">
+    <div class="welcome-box">
+      <div style="font-size: 54px; margin-bottom: 12px;">🌕🪷🎆</div>
+      <h1>งานวัดลอยกระทง 3D</h1>
+      <p>
+        สถานที่จำลองบรรยากาศงานวัดไทยย้อนยุคริมแม่น้ำ 3D<br>
+        ชมพระจันทร์เต็มดวงส่องสว่างเหนือสายน้ำ ท่าน้ำประดับโคมไฟสวยงาม<br>
+        พระเจดีย์ทองคำ ตลาดของขายงานวัด และจุดพลุหลากสีสัน
+      </p>
+      <div style="background: rgba(30, 41, 59, 0.6); padding: 12px; border-radius: 12px; margin-bottom: 24px; font-size: 13px; color: #cbd5e1;">
+        💡 <b>ควบคุม:</b> <b>คลิกเมาส์ลาก</b> หมุนชมรอบทิศ 360° / <b>ล้อเมาส์</b> ซูมเข้า-ออก / <b>กดปุ่มจุดพลุ</b> / <b>กดปุ่มลอยกระทง</b>
+      </div>
+      <button id="btn-start-game" class="btn-primary" style="font-size: 18px;" onclick="const o = document.getElementById('welcome-overlay'); if (o) { o.classList.add('hidden'); o.style.display='none'; } window.app?.startFromButton?.();">
+        🏮 เริ่มเที่ยวชมงานวัด (Enter Festival)
+      </button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
 </html>
